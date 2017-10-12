@@ -97,10 +97,6 @@ class RPNProposal(snt.AbstractModule):
         # Decode boxes
         all_proposals = decode(all_anchors, rpn_bbox_pred)
 
-        if not self._clip_after_nms:
-            # Clip proposals to the image.
-            all_proposals = clip_boxes(all_proposals, im_shape)
-
         # Filter proposals with negative or zero area.
         (x_min, y_min, x_max, y_max) = tf.unstack(
             all_proposals, axis=1
