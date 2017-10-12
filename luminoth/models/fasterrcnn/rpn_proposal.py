@@ -59,10 +59,13 @@ class RPNProposal(snt.AbstractModule):
                 nms_proposals_scores: A Tensor with the probability of being an
                     object for that proposal. Its shape should be
                     (total_nms_proposals, 1)
-                proposals: A Tensor with all the RPN proposals without any
-                    filtering.
-                scores: A Tensor with a score for each of the unfiltered RPN
+                proposals: A Tensor with all the valid RPN proposals.
+                scores: A Tensor with a score for each of the valid RPN
                     proposals.
+                proposals_raw: A Tensor with all the RPN proposals without any
+                    filtering.
+                scores_raw: A Tensor with a score for each of the unfiltered
+                    RPN proposals.
         """
         # Scores are extracted from the second scalar of the cls probability.
         # cls_probability is a softmax of (background, foreground).
@@ -118,6 +121,14 @@ class RPNProposal(snt.AbstractModule):
             all_proposals, proposal_filter,
             name='filter_invalid_proposals'
         )
+        if self._debug:
+            proposals_raw = tf.identity(proposals)
+            scores_raw = tf.identity(scores)
+
+        if not self._clip_after_nms:
+            # Clip proposals to the image.
+            proposals = clip_boxes(proposals, im_shape)
+
         filtered_proposals = tf.shape(scores)[0]
 
         tf.summary.scalar(
@@ -178,9 +189,11 @@ class RPNProposal(snt.AbstractModule):
             pred.update({
                 'proposals': proposals,
                 'scores': scores,
+                'proposals_raw': proposals_raw,
+                'scores_raw': scores_raw,
                 'top_k_proposals': top_k_proposals,
                 'top_k_scores': top_k_scores,
-                'all_proposals': all_proposals,
+                'all_proposals': all_proposals
             })
 
         return pred
